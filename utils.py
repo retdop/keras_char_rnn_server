@@ -14,8 +14,8 @@ MAX_LEN = 40
 class TextLoader():
     def __init__(self):
         self.MAX_LEN = 40
-        path = 'data/nietzsche/nietzsche.txt'
-        self.text = open(path).read().lower()
+        path = 'data/python/scikit_cleaned_small.txt'
+        self.text = open(path).read()
         print('corpus length:', len(self.text))
 
         self.chars = sorted(list(set(self.text)))

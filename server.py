@@ -8,7 +8,7 @@ import sample
 from utils import TextLoader
 
 txt = TextLoader()
-model = load_model('data/nietzsche/nietzsche_1.h5')
+model = load_model('data/python/python.h5')
 
 
 app = Flask(__name__)

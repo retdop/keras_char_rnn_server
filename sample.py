@@ -13,7 +13,7 @@ from utils import TextLoader, MAX_LEN
 def main():
     txt = TextLoader()
     print('Loading model...')
-    model = load_model('data/nietzsche/nietzsche_1.h5')
+    model = load_model('data/python/python.h5')
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
