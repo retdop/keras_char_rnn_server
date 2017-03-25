@@ -21,7 +21,7 @@ def data():
 
 def model(X_train, Y_train, X_test, Y_test):
     model = Sequential()
-    model.add(LSTM({{choice([128, 256])}}, input_dim = len(txt.chars)))
+    model.add(LSTM({{choice([128, 256])}}, input_shape = (None, len(txt.chars))))
     model.add(Dense(len(txt.chars)))
     model.add(Activation('softmax'))
     optimizer = RMSprop(lr=0.01)
@@ -39,7 +39,10 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=5,
+                                          max_evals=2,
                                           trials=Trials())
+    X_train, Y_train, X_test, Y_test = data()
     print("Evalutation of best performing model:")
-    print(best_model.evaluate(txt.X, txt.y))
+    print(best_model.evaluate(X_test, Y_test))
+    
+import gc; gc.collect()

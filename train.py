@@ -16,7 +16,7 @@ txt = TextLoader()
 # build the model: a single LSTM
 print('Build model...')
 model = Sequential()
-model.add(LSTM(128, input_dim = len(txt.chars)))
+model.add(LSTM(128, input_shape = (None, len(txt.chars))))
 # input_shape=(MAX_LEN, len(txt.chars))))
 model.add(Dense(len(txt.chars)))
 model.add(Activation('softmax'))
