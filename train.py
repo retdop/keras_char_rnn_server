@@ -27,15 +27,13 @@ def data():
 
 def model(X_train, Y_train, X_test, Y_test):
     model = Sequential()
-    print("89????", X_train.shape[2])
     model.add(LSTM(128, input_shape = (None, X_train.shape[2])))
     model.add(Dense(X_train.shape[2]))
     model.add(Activation('softmax'))
     optimizer = RMSprop(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['categorical_accuracy'])
     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-
-    hist = model.fit(X_train, Y_train, validation_split=0.2, callbacks=[early_stopping], batch_size=128, epochs=2)
+    hist = model.fit(X_train, Y_train, validation_split=0.2, callbacks=[early_stopping], batch_size=256, epochs=50)
     print(hist.history)
     model.save('data/python/python.h5')
     print('model saved to ' + 'data/python/python.h5')

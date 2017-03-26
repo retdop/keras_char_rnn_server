@@ -5,12 +5,6 @@ from keras.layers import LSTM
 from keras.optimizers import RMSprop
 from keras.utils.data_utils import get_file
 import numpy as np
-import random
-import sys
-
-from utils import TextLoader, MAX_LEN
-
-def main():
-    txt = TextLoader()
-    print('Loading model...')
-    model = load_model(sidirareneoudeantaneot r_osipobon 2reesf_seaterarsator_relelelioteleleorilpseramesejopererealererene 
+import squared_parameters(.0, 0.5, 0.001)
+        return self.cv_folds()
+                    for i in range 
