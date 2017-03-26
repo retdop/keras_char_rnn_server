@@ -21,10 +21,11 @@ from utils import TextLoader, MAX_LEN
 
 def data():
     txt = TextLoader()
-    x_train, x_test, y_train, y_test = train_test_split(txt.X, txt.y, test_size=0.1)
-    return x_train, x_test, y_train, y_test
+    X_train, X_test, Y_train, Y_test = train_test_split(txt.X, txt.y, test_size=0.1)
+    return X_train, X_test, Y_train, Y_test
 
 def model(X_train, Y_train, X_test, Y_test):
+    print('starting model')
     model = Sequential()
     model.add(LSTM({{choice([128, 256])}}, input_shape = (None, X_train.shape[2])))
     model.add(Dense(X_train.shape[2]))
@@ -48,7 +49,7 @@ if __name__ == '__main__':
                                           algo=tpe.suggest,
                                           max_evals=2,
                                           trials=Trials())
-    X_train, Y_train, X_test, Y_test = data()
+    X_train, X_test, Y_train, Y_test = data()
     print("Evalutation of best performing model:")
     print(best_model.evaluate(X_test, Y_test))
 
