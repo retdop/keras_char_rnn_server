@@ -2,7 +2,8 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
-from keras.optimizers import RMSprop
+from keras.optimizers import Adam
+from keras.callbacks import Tensorboard
 import numpy as np
 import random
 import sys
@@ -30,10 +31,11 @@ def model(X_train, Y_train, X_test, Y_test):
     model.add(LSTM(128, input_shape = (None, X_train.shape[2])))
     model.add(Dense(X_train.shape[2]))
     model.add(Activation('softmax'))
-    optimizer = RMSprop(lr=0.01)
+    optimizer = Adam(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['categorical_accuracy'])
     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-    hist = model.fit(X_train, Y_train, validation_split=0.2, callbacks=[early_stopping], batch_size=256, epochs=50)
+    tensorboard = Tensorboard(log_dir='./logs')
+    hist = model.fit(X_train, Y_train, validation_split=0.2, callbacks=[early_stopping, tensorboard], batch_size=256, epochs=50)
     print(hist.history)
     model.save('data/python/python.h5')
     print('model saved to ' + 'data/python/python.h5')
