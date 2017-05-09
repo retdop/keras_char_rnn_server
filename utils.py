@@ -14,7 +14,7 @@ MAX_LEN = 40
 class TextLoader():
     def __init__(self):
         self.MAX_LEN = 40
-        path = 'data/python/scikit_cleaned_small.txt'
+        path = 'data/python/scikit_cleaned.txt'
         self.text = open(path).read()
         print('corpus length:', len(self.text))
 

@@ -3,7 +3,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.optimizers import Adam
-from keras.callbacks import Tensorboard
 import numpy as np
 import random
 import sys
@@ -13,6 +12,7 @@ from hyperas import optim
 from hyperas.distributions import choice, uniform, conditional
 
 from keras.callbacks import EarlyStopping
+from keras.callbacks import TensorBoard
 
 from sklearn.cross_validation import train_test_split
 
@@ -34,7 +34,7 @@ def model(X_train, Y_train, X_test, Y_test):
     optimizer = Adam(lr=0.01)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['categorical_accuracy'])
     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-    tensorboard = Tensorboard(log_dir='./logs')
+    tensorboard = TensorBoard(log_dir='./logs')
     hist = model.fit(X_train, Y_train, validation_split=0.2, callbacks=[early_stopping, tensorboard], batch_size=256, epochs=50)
     print(hist.history)
     model.save('data/python/python.h5')

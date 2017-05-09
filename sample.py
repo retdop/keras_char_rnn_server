@@ -13,7 +13,8 @@ from utils import TextLoader, MAX_LEN
 def main():
     txt = TextLoader()
     print('Loading model...')
-    model = load_model('data/python/python.h5')
+    model = load_model('python_256_0.001_256.h5')
+    # model = load_model('data/python/python.h5')
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -40,7 +41,8 @@ def sample_chars(prime = 'The ', n_chars = 20, diversity = 0.5, txt = None, mode
         preds = model.predict(x, verbose=0)[0]
         next_index = sample(preds, diversity)
         next_char = txt.indices_char[next_index]
-
+        # if next_char in [' ', '.', ',', ':', '\n', '\t'] and i>0:
+        #     break
         generated += next_char
         sentence = sentence[1:] + next_char
 

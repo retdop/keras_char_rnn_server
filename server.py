@@ -1,3 +1,4 @@
+
 from flask import Flask, request
 from flask_restful import Resource, Api
 from json import dumps
@@ -8,8 +9,7 @@ import sample
 from utils import TextLoader
 
 txt = TextLoader()
-model = load_model('data/python/python.h5')
-
+model = load_model('python/python_256_0.001_256.h5')
 
 app = Flask(__name__)
 api = Api(app)

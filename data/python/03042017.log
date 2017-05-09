@@ -1,0 +1,464 @@
+Last login: Mon Apr  3 22:58:15 2017 from 193.52.24.11
+=============================================================================
+       __|  __|_  )
+       _|  (     /   Deep Learning AMI for Amazon Linux 
+      ___|\___|___|
+
+
+The README file for the AMI ➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜➜  /home/ec2-user/src/README.md
+Tests for deep learning frameworks ➜➜➜➜➜➜➜➜➜➜➜➜   /home/ec2-user/src/bin
+=============================================================================
+
+[ec2-user@ip-172-31-30-90 ~]$ cd keras-char-rnn-server/
+[ec2-user@ip-172-31-30-90 keras-char-rnn-server]$ python3 hypertuning.py ^C
+[ec2-user@ip-172-31-30-90 keras-char-rnn-server]$ python3 hypertuning.py
+Using TensorFlow backend.
+I tensorflow/stream_executor/dso_loader.cc:135] successfully opened CUDA library libcublas.so.7.5 locally
+I tensorflow/stream_executor/dso_loader.cc:135] successfully opened CUDA library libcudnn.so.5 locally
+I tensorflow/stream_executor/dso_loader.cc:135] successfully opened CUDA library libcufft.so.7.5 locally
+I tensorflow/stream_executor/dso_loader.cc:135] successfully opened CUDA library libcuda.so.1 locally
+I tensorflow/stream_executor/dso_loader.cc:135] successfully opened CUDA library libcurand.so.7.5 locally
+/usr/local/lib64/python3.4/site-packages/sklearn/cross_validation.py:44: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. Also note that the interface of the new CV iterators are different from that of this module. This module will be removed in 0.20.
+  "This module will be removed in 0.20.", DeprecationWarning)
+/usr/local/lib/python3.4/site-packages/hyperas/optim.py
+/usr/local/lib/python3.4/site-packages/hyperas/optim.py
+/usr/local/lib/python3.4/site-packages/hyperas/optim.py
+hypertuning.py
+>>> Imports:
+from __future__ import print_function
+
+try:
+    from keras.models import Sequential
+except:
+    pass
+
+try:
+    from keras.layers import Dense, Activation
+except:
+    pass
+
+try:
+    from keras.layers import LSTM
+except:
+    pass
+
+try:
+    from keras.optimizers import Adam
+except:
+    pass
+
+try:
+    import numpy
+except:
+    pass
+
+try:
+    import random
+except:
+    pass
+
+try:
+    import sys
+except:
+    pass
+
+try:
+    from hyperopt import Trials, STATUS_OK, tpe
+except:
+    pass
+
+try:
+    from hyperas import optim
+except:
+    pass
+
+try:
+    from hyperas.distributions import choice, uniform, conditional
+except:
+    pass
+
+try:
+    from keras.callbacks import EarlyStopping
+except:
+    pass
+
+try:
+    from keras.callbacks import TensorBoard
+except:
+    pass
+
+try:
+    from sklearn.cross_validation import train_test_split
+except:
+    pass
+
+try:
+    from sample import sample, sample_chars
+except:
+    pass
+
+try:
+    from utils import TextLoader, MAX_LEN
+except:
+    pass
+
+try:
+    import gc
+except:
+    pass
+
+>>> Hyperas search space:
+
+def get_space():
+    return {
+        'n_modules': hp.choice('n_modules', [128, 256]),
+        'lr': hp.choice('lr', [0.01, 0.001, 0.1]),
+        'batch_size': hp.choice('batch_size', [128, 256, 512]),
+    }
+
+>>> Data
+  1: 
+  2: txt = TextLoader()
+  3: X_train, X_test, Y_train, Y_test = train_test_split(txt.X, txt.y, test_size=0.1)
+  4: 
+  5: 
+  6: 
+>>> Resulting replaced keras model:
+
+   1: def keras_fmin_fnct(space):
+   2: 
+   3:     print('starting model')
+   4:     n_modules = space['n_modules']
+   5:     lr = space['lr']
+   6:     batch_size = space['batch_size']
+   7:     print("hyperparams :", n_modules, lr, batch_size)
+   8:     model = Sequential()
+   9:     model.add(LSTM(n_modules, input_shape = (None, X_train.shape[2])))
+  10:     model.add(Dense(X_train.shape[2]))
+  11:     model.add(Activation('softmax'))
+  12:     optimizer = Adam(lr=lr)
+  13:     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['categorical_accuracy'])
+  14:     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+  15:     tensorboard = TensorBoard(log_dir='./logs')
+  16:     hist = model.fit(X_train, Y_train, batch_size=batch_size, callbacks=[early_stopping, tensorboard], validation_split=0.2)
+  17:     print(hist.history)
+  18:     model.save('data/python/python_' + str(n_modules) + '_' + str(lr) + '_' + str(batch_size) + '.h5')
+  19:     print('model saved to ' + 'data/python/python_' + str(n_modules) + '_' + str(lr) + '_' + str(batch_size) + '.h5')
+  20: 
+  21:     score, acc = model.evaluate(X_test, Y_test, verbose=0)
+  22:     print('Test categorical accuracy:', acc)
+  23:     return {'loss': -acc, 'status': STATUS_OK, 'model': model}
+  24: 
+corpus length: 2182278
+total chars: 96
+nb sequences: 727413
+Vectorization...
+starting model
+hyperparams : 128 0.001 128
+Train on 523736 samples, validate on 130935 samples
+W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE3 instructions, but these are available on your machine and could speed up CPU computations.
+W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.
+W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
+W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX instructions, but these are available on your machine and could speed up CPU computations.
+I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:910] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:885] Found device 0 with properties: 
+name: GRID K520
+major: 3 minor: 0 memoryClockRate (GHz) 0.797
+pciBusID 0000:00:03.0
+Total memory: 3.94GiB
+Free memory: 3.91GiB
+W tensorflow/stream_executor/cuda/cuda_driver.cc:590] creating context when one is currently active; existing: 0x5057d10
+I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:910] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:885] Found device 1 with properties: 
+name: GRID K520
+major: 3 minor: 0 memoryClockRate (GHz) 0.797
+pciBusID 0000:00:04.0
+Total memory: 3.94GiB
+Free memory: 3.91GiB
+W tensorflow/stream_executor/cuda/cuda_driver.cc:590] creating context when one is currently active; existing: 0x505ba20
+I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:910] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:885] Found device 2 with properties: 
+name: GRID K520
+major: 3 minor: 0 memoryClockRate (GHz) 0.797
+pciBusID 0000:00:05.0
+Total memory: 3.94GiB
+Free memory: 3.91GiB
+W tensorflow/stream_executor/cuda/cuda_driver.cc:590] creating context when one is currently active; existing: 0x505f730
+I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:910] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:885] Found device 3 with properties: 
+name: GRID K520
+major: 3 minor: 0 memoryClockRate (GHz) 0.797
+pciBusID 0000:00:06.0
+Total memory: 3.94GiB
+Free memory: 3.91GiB
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 0 and 1
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 0 and 2
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 0 and 3
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 1 and 0
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 1 and 2
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 1 and 3
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 2 and 0
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 2 and 1
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 2 and 3
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 3 and 0
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 3 and 1
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:777] Peer access not supported between device ordinals 3 and 2
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:906] DMA: 0 1 2 3 
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:916] 0:   Y N N N 
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:916] 1:   N Y N N 
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:916] 2:   N N Y N 
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:916] 3:   N N N Y 
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:975] Creating TensorFlow device (/gpu:0) -> (device: 0, name: GRID K520, pci bus id: 0000:00:03.0)
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:975] Creating TensorFlow device (/gpu:1) -> (device: 1, name: GRID K520, pci bus id: 0000:00:04.0)
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:975] Creating TensorFlow device (/gpu:2) -> (device: 2, name: GRID K520, pci bus id: 0000:00:05.0)
+I tensorflow/core/common_runtime/gpu/gpu_device.cc:975] Creating TensorFlow device (/gpu:3) -> (device: 3, name: GRID K520, pci bus id: 0000:00:06.0)
+Epoch 1/10
+I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 3241 get requests, put_count=2659 evicted_count=1000 eviction_rate=0.376081 and unsatisfied allocation rate=0.518976
+I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 100 to 110
+   896/523736 [..............................] - ETA: 501s - loss: 4.4323 - categorical_accuracy: 0.1763I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 3256 get requests, put_count=2815 evicted_count=1000 eviction_rate=0.35524 and unsatisfied allocation rate=0.448403
+I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 212 to 233
+  1792/523736 [..............................] - ETA: 429s - loss: 4.0985 - categorical_accuracy: 0.2422I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 345 get requests, put_count=1389 evicted_count=1000 eviction_rate=0.719942 and unsatisfied allocation rate=0
+  3456/523736 [..............................] - ETA: 394s - loss: 3.6522 - categorical_accuracy: 0.2841I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 6828 get requests, put_count=6900 evicted_count=1000 eviction_rate=0.144928 and unsatisfied allocation rate=0.151289
+I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 1158 to 1273
+523736/523736 [==============================] - 388s - loss: 2.1026 - categorical_accuracy: 0.4657 - val_loss: 1.7741 - val_categorical_accuracy: 0.5363
+Epoch 2/10
+523736/523736 [==============================] - 388s - loss: 1.6419 - categorical_accuracy: 0.5692 - val_loss: 1.5297 - val_categorical_accuracy: 0.5994
+Epoch 3/10
+523736/523736 [==============================] - 389s - loss: 1.4562 - categorical_accuracy: 0.6172 - val_loss: 1.4061 - val_categorical_accuracy: 0.6327
+Epoch 4/10
+523736/523736 [==============================] - 390s - loss: 1.3441 - categorical_accuracy: 0.6457 - val_loss: 1.3228 - val_categorical_accuracy: 0.6516
+Epoch 5/10
+523736/523736 [==============================] - 389s - loss: 1.2684 - categorical_accuracy: 0.6640 - val_loss: 1.2653 - val_categorical_accuracy: 0.6661
+Epoch 6/10
+523736/523736 [==============================] - 389s - loss: 1.2125 - categorical_accuracy: 0.6783 - val_loss: 1.2328 - val_categorical_accuracy: 0.6746
+Epoch 7/10
+523736/523736 [==============================] - 390s - loss: 1.1689 - categorical_accuracy: 0.6889 - val_loss: 1.2014 - val_categorical_accuracy: 0.6822
+Epoch 8/10
+523736/523736 [==============================] - 390s - loss: 1.1344 - categorical_accuracy: 0.6974 - val_loss: 1.1778 - val_categorical_accuracy: 0.6883
+Epoch 9/10
+523736/523736 [==============================] - 390s - loss: 1.1059 - categorical_accuracy: 0.7044 - val_loss: 1.1555 - val_categorical_accuracy: 0.6941
+Epoch 10/10
+523736/523736 [==============================] - 391s - loss: 1.0818 - categorical_accuracy: 0.7105 - val_loss: 1.1379 - val_categorical_accuracy: 0.6986
+{'loss': [2.1025907726826976, 1.6418633483577776, 1.4562116451584781, 1.3441324304878473, 1.2683981400772018, 1.2124513326825357, 1.1688914982943732, 1.1343709790442784, 1.1058863541932322, 1.0817859125404639], 'val_loss': [1.77409148414998, 1.5297084005390578, 1.4061147167259562, 1.322793610565677, 1.2653318349331903, 1.2328115425910329, 1.2013515817025149, 1.1777631428477808, 1.155529340612623, 1.1379146109742799], 'val_categorical_accuracy': [0.53628136100840784, 0.59939664726828723, 0.63273379928755147, 0.65163630816509222, 0.66608622606374124, 0.67464008866641267, 0.68221636697244237, 0.6883033566450879, 0.69406193920202797, 0.69859854133194577], 'categorical_accuracy': [0.46568882032259923, 0.5691684360150312, 0.61723272794290895, 0.64567453831701471, 0.66401393068991765, 0.6783493974090582, 0.68885469015196688, 0.69741434615822318, 0.7043529564586255, 0.71048008919887529]}
+model saved to data/python/python_128_0.001_128.h5
+Test categorical accuracy: 0.695815347393
+starting model
+hyperparams : 128 0.1 256
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 212s - loss: 5.0146 - categorical_accuracy: 0.3083 - val_loss: 5.0782 - val_categorical_accuracy: 0.3156
+Epoch 2/10
+523736/523736 [==============================] - 214s - loss: 5.6442 - categorical_accuracy: 0.3089 - val_loss: 6.1381 - val_categorical_accuracy: 0.3156
+Epoch 3/10
+523736/523736 [==============================] - 214s - loss: 6.3380 - categorical_accuracy: 0.3089 - val_loss: 6.2801 - val_categorical_accuracy: 0.3156
+Epoch 4/10
+523736/523736 [==============================] - 213s - loss: 6.3541 - categorical_accuracy: 0.3107 - val_loss: 6.4843 - val_categorical_accuracy: 0.3156
+Epoch 5/10
+523736/523736 [==============================] - 213s - loss: 6.4765 - categorical_accuracy: 0.3073 - val_loss: 6.4233 - val_categorical_accuracy: 0.3156
+Epoch 6/10
+523736/523736 [==============================] - 213s - loss: 6.4726 - categorical_accuracy: 0.3073 - val_loss: 6.5241 - val_categorical_accuracy: 0.0371
+Epoch 7/10
+523736/523736 [==============================] - 213s - loss: 6.5674 - categorical_accuracy: 0.3093 - val_loss: 6.8144 - val_categorical_accuracy: 0.3156
+{'loss': [5.0146327977190168, 5.6441741476449803, 6.3379866647394758, 6.3541202437951041, 6.4764845398086504, 6.472647181929049, 6.5674111544152689], 'val_loss': [5.0781760964983764, 6.1381331498522655, 6.2800754580696401, 6.4843196979825262, 6.4232516840924809, 6.5241028189690988, 6.814392174588094], 'val_categorical_accuracy': [0.31559170582210977, 0.31559170582210977, 0.31559170582210977, 0.31559170582210977, 0.31559170582210977, 0.037056554781763298, 0.31559170582210977], 'categorical_accuracy': [0.30825072173812457, 0.30887890082936514, 0.30889226632628297, 0.31074243513364092, 0.30726549254505375, 0.30728267677163479, 0.30930086914655069]}
+model saved to data/python/python_128_0.1_256.h5
+Test categorical accuracy: 0.313532759616
+starting model
+hyperparams : 256 0.1 512
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 185s - loss: 13.4805 - categorical_accuracy: 0.0493 - val_loss: 13.5494 - val_categorical_accuracy: 0.0399
+Epoch 2/10
+523736/523736 [==============================] - 186s - loss: 13.5160 - categorical_accuracy: 0.0487 - val_loss: 13.5022 - val_categorical_accuracy: 0.0399
+Epoch 3/10
+523736/523736 [==============================] - 186s - loss: 13.5109 - categorical_accuracy: 0.0493 - val_loss: 13.4433 - val_categorical_accuracy: 0.0431
+Epoch 4/10
+523736/523736 [==============================] - 186s - loss: 13.5039 - categorical_accuracy: 0.0492 - val_loss: 13.4587 - val_categorical_accuracy: 0.0431
+Epoch 5/10
+523736/523736 [==============================] - 186s - loss: 13.5851 - categorical_accuracy: 0.0498 - val_loss: 14.3235 - val_categorical_accuracy: 0.0372
+Epoch 6/10
+523736/523736 [==============================] - 186s - loss: 14.0283 - categorical_accuracy: 0.0507 - val_loss: 14.0466 - val_categorical_accuracy: 0.0372
+Epoch 7/10
+523736/523736 [==============================] - 186s - loss: 14.0236 - categorical_accuracy: 0.0511 - val_loss: 14.0119 - val_categorical_accuracy: 0.0431
+Epoch 8/10
+523736/523736 [==============================] - 186s - loss: 14.0342 - categorical_accuracy: 0.0508 - val_loss: 14.0091 - val_categorical_accuracy: 0.0616
+Epoch 9/10
+523736/523736 [==============================] - 186s - loss: 14.0194 - categorical_accuracy: 0.0517 - val_loss: 14.0011 - val_categorical_accuracy: 0.0616
+{'loss': [13.480466916725845, 13.516037843232739, 13.510888833961905, 13.503940808286313, 13.585124109111357, 14.028325055335188, 14.023641455038199, 14.034150811010267, 14.019439510367777], 'val_loss': [13.549365390469202, 13.502212837279838, 13.443315631229725, 13.458665030197521, 14.323467069621412, 14.046601009183165, 14.011931042010765, 14.009103402091032, 14.001085490352278], 'val_categorical_accuracy': [0.039897659147548691, 0.039897659147548691, 0.043082445488162445, 0.043082445488162445, 0.037194027569623374, 0.037194027569623374, 0.043082445488162445, 0.061557261225110807, 0.061557261225110807], 'categorical_accuracy': [0.049282462922013902, 0.048696289734441831, 0.049280553559742951, 0.049162173307494901, 0.049794171110872407, 0.050724028902674072, 0.051145997221111489, 0.050823315562997344, 0.051665342840844723]}
+model saved to data/python/python_256_0.1_512.h5
+Test categorical accuracy: 0.0632646889005
+starting model
+hyperparams : 256 0.001 256
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 242s - loss: 2.1486 - categorical_accuracy: 0.4580 - val_loss: 1.8081 - val_categorical_accuracy: 0.5293
+Epoch 2/10
+523736/523736 [==============================] - 243s - loss: 1.6698 - categorical_accuracy: 0.5646 - val_loss: 1.5497 - val_categorical_accuracy: 0.5974
+Epoch 3/10
+523736/523736 [==============================] - 243s - loss: 1.4615 - categorical_accuracy: 0.6182 - val_loss: 1.4021 - val_categorical_accuracy: 0.6345
+Epoch 4/10
+523736/523736 [==============================] - 243s - loss: 1.3265 - categorical_accuracy: 0.6513 - val_loss: 1.2962 - val_categorical_accuracy: 0.6576
+Epoch 5/10
+523736/523736 [==============================] - 243s - loss: 1.2313 - categorical_accuracy: 0.6744 - val_loss: 1.2358 - val_categorical_accuracy: 0.6747
+Epoch 6/10
+523736/523736 [==============================] - 243s - loss: 1.1602 - categorical_accuracy: 0.6921 - val_loss: 1.1810 - val_categorical_accuracy: 0.6886
+Epoch 7/10
+523736/523736 [==============================] - 243s - loss: 1.1041 - categorical_accuracy: 0.7055 - val_loss: 1.1470 - val_categorical_accuracy: 0.6966
+Epoch 8/10
+523736/523736 [==============================] - 243s - loss: 1.0577 - categorical_accuracy: 0.7173 - val_loss: 1.1169 - val_categorical_accuracy: 0.7048
+Epoch 9/10
+523736/523736 [==============================] - 243s - loss: 1.0186 - categorical_accuracy: 0.7266 - val_loss: 1.0904 - val_categorical_accuracy: 0.7120
+Epoch 10/10
+523736/523736 [==============================] - 243s - loss: 0.9849 - categorical_accuracy: 0.7349 - val_loss: 1.0742 - val_categorical_accuracy: 0.7160
+{'loss': [2.1485631548708488, 1.6697686282270838, 1.4615451596307545, 1.326483466778279, 1.2312600456351972, 1.1602213438058298, 1.1040933239222728, 1.0577041202302593, 1.0186114833964115, 0.98491002649243187], 'val_loss': [1.8080845386560336, 1.5496795294652368, 1.4020582193196987, 1.2961994137938602, 1.2357838413771538, 1.1810144534238303, 1.1470319737909895, 1.1168993263978084, 1.0904322694483894, 1.0742309459529391], 'val_categorical_accuracy': [0.5293466224518184, 0.59744911605232831, 0.63454385771667465, 0.65755527553705118, 0.6746630007965656, 0.6885935770357744, 0.69655936153073328, 0.70476190477738232, 0.71201741323395684, 0.71595066261167684], 'categorical_accuracy': [0.45796164480542623, 0.56461270563613408, 0.61821795713962158, 0.65125559441069159, 0.67440275252270543, 0.69208914415806511, 0.70553484963528013, 0.71725449464271862, 0.72657216613496312, 0.73491033653272853]}
+model saved to data/python/python_256_0.001_256.h5
+Test categorical accuracy: 0.713040609277
+starting model
+hyperparams : 256 0.01 512
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 184s - loss: 1.7274 - categorical_accuracy: 0.5547 - val_loss: 1.3158 - val_categorical_accuracy: 0.6514
+Epoch 2/10
+523736/523736 [==============================] - 185s - loss: 4.0792 - categorical_accuracy: 0.4776 - val_loss: 6.5496 - val_categorical_accuracy: 0.3103
+Epoch 3/10
+523736/523736 [==============================] - 185s - loss: 6.4159 - categorical_accuracy: 0.3235 - val_loss: 6.2851 - val_categorical_accuracy: 0.3222
+Epoch 4/10
+523736/523736 [==============================] - 186s - loss: 5.5380 - categorical_accuracy: 0.3540 - val_loss: 2.6977 - val_categorical_accuracy: 0.4774
+Epoch 5/10
+523736/523736 [==============================] - 186s - loss: 2.4019 - categorical_accuracy: 0.5107 - val_loss: 2.1434 - val_categorical_accuracy: 0.5216
+Epoch 6/10
+523736/523736 [==============================] - 185s - loss: 2.0474 - categorical_accuracy: 0.5317 - val_loss: 2.0835 - val_categorical_accuracy: 0.5264
+Epoch 7/10
+523736/523736 [==============================] - 185s - loss: 2.0150 - categorical_accuracy: 0.5399 - val_loss: 2.0671 - val_categorical_accuracy: 0.5316
+{'loss': [1.7273862962497568, 4.0792397522858233, 6.4158793543112989, 5.5380176086260589, 2.4019022674506068, 2.0473643761064855, 2.0149772396348693], 'val_loss': [1.315769485076751, 6.5495556524648704, 6.2850871279353733, 2.69771453153137, 2.1433571665139617, 2.0834857224061527, 2.0671386448165352], 'val_categorical_accuracy': [0.65135372487768606, 0.31033719017337486, 0.32222094934193424, 0.47744300606989409, 0.52160232179093047, 0.52639859467295291, 0.53162256076299763], 'categorical_accuracy': [0.5546764018240008, 0.47764140713070474, 0.32345303742864506, 0.35404860464232679, 0.51070768476681527, 0.53169153927700585, 0.5398903264167163]}
+model saved to data/python/python_256_0.01_512.h5
+Test categorical accuracy: 0.531577355586
+starting model
+hyperparams : 128 0.1 512
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 145s - loss: 2.5575 - categorical_accuracy: 0.3907 - val_loss: 2.4875 - val_categorical_accuracy: 0.3843
+Epoch 2/10
+523736/523736 [==============================] - 147s - loss: 4.3609 - categorical_accuracy: 0.3774 - val_loss: 9.4476 - val_categorical_accuracy: 0.3149
+Epoch 3/10
+523736/523736 [==============================] - 147s - loss: 9.4161 - categorical_accuracy: 0.3153 - val_loss: 9.4479 - val_categorical_accuracy: 0.3160
+Epoch 4/10
+523736/523736 [==============================] - 146s - loss: 9.4119 - categorical_accuracy: 0.3161 - val_loss: 9.4413 - val_categorical_accuracy: 0.3156
+Epoch 5/10
+523736/523736 [==============================] - 146s - loss: 9.4106 - categorical_accuracy: 0.3156 - val_loss: 9.4465 - val_categorical_accuracy: 0.3140
+Epoch 6/10
+523736/523736 [==============================] - 146s - loss: 9.4058 - categorical_accuracy: 0.3151 - val_loss: 9.5064 - val_categorical_accuracy: 0.3158
+Epoch 7/10
+523736/523736 [==============================] - 147s - loss: 9.3977 - categorical_accuracy: 0.3158 - val_loss: 9.4591 - val_categorical_accuracy: 0.3161
+{'loss': [2.5574741666269314, 4.3608642907315769, 9.4160667087853795, 9.411882185966201, 9.4106247776769241, 9.405835771508956, 9.3976519123441982], 'val_loss': [2.4875410732527561, 9.4475717259695227, 9.447926999708038, 9.4412556722364727, 9.4465250763354334, 9.5063828775216006, 9.4590922793358025], 'val_categorical_accuracy': [0.38434337643762723, 0.31492725402081495, 0.31595066262374022, 0.31562225531593069, 0.31400313132310981, 0.31584373925834486, 0.31611104750613211], 'categorical_accuracy': [0.39071975193472425, 0.37737333312784749, 0.31533444330822558, 0.31610964303080979, 0.31559220676202371, 0.31510913896005655, 0.3158041456009838]}
+model saved to data/python/python_128_0.1_512.h5
+Test categorical accuracy: 0.315113689478
+starting model
+hyperparams : 256 0.01 128
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 475s - loss: 1.5134 - categorical_accuracy: 0.6051 - val_loss: 1.3362 - val_categorical_accuracy: 0.6438
+Epoch 2/10
+523736/523736 [==============================] - 475s - loss: 1.1771 - categorical_accuracy: 0.6824 - val_loss: 1.1921 - val_categorical_accuracy: 0.6784
+Epoch 3/10
+523736/523736 [==============================] - 476s - loss: 2.5262 - categorical_accuracy: 0.4190 - val_loss: 2.5456 - val_categorical_accuracy: 0.3913
+Epoch 4/10
+523736/523736 [==============================] - 476s - loss: 2.5256 - categorical_accuracy: 0.3927 - val_loss: 2.3670 - val_categorical_accuracy: 0.4157
+Epoch 5/10
+523736/523736 [==============================] - 475s - loss: 2.6176 - categorical_accuracy: 0.3990 - val_loss: 3.2576 - val_categorical_accuracy: 0.3115
+Epoch 6/10
+523736/523736 [==============================] - 476s - loss: 2.8594 - categorical_accuracy: 0.3433 - val_loss: 2.7498 - val_categorical_accuracy: 0.3539
+Epoch 7/10
+523736/523736 [==============================] - 475s - loss: 2.7712 - categorical_accuracy: 0.3505 - val_loss: 2.8065 - val_categorical_accuracy: 0.3397
+Epoch 8/10
+523736/523736 [==============================] - 475s - loss: 2.7440 - categorical_accuracy: 0.3513 - val_loss: 2.7307 - val_categorical_accuracy: 0.3575
+{'loss': [1.5133651456285595, 1.1770524599452115, 2.5262475326564657, 2.5256046113723603, 2.617582867868693, 2.8594336130191245, 2.7712400581039618, 2.7440224742981179], 'val_loss': [1.3362429373005837, 1.1921442301288732, 2.5456032704773484, 2.3669648508647376, 3.2576446040251068, 2.7498015843420296, 2.8064839788640756, 2.7306865730996521], 'val_categorical_accuracy': [0.64380035908419675, 0.67838240355456936, 0.39130102726275756, 0.41572535994554816, 0.31154389584187847, 0.35393133998991499, 0.33971054343945628, 0.35754381946446345], 'categorical_accuracy': [0.60511211755905137, 0.6823571417697224, 0.4189706264224724, 0.39270166649028077, 0.39904837552016764, 0.3433122794708664, 0.35052010937263084, 0.35133922433930354]}
+model saved to data/python/python_256_0.01_128.h5
+Test categorical accuracy: 0.356451568557
+starting model
+hyperparams : 128 0.001 256
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 216s - loss: 2.2594 - categorical_accuracy: 0.4328 - val_loss: 1.9225 - val_categorical_accuracy: 0.5028
+Epoch 2/10
+523736/523736 [==============================] - 214s - loss: 1.7928 - categorical_accuracy: 0.5322 - val_loss: 1.6967 - val_categorical_accuracy: 0.5517
+Epoch 3/10
+523736/523736 [==============================] - 215s - loss: 1.6108 - categorical_accuracy: 0.5767 - val_loss: 1.5480 - val_categorical_accuracy: 0.5929
+Epoch 4/10
+523736/523736 [==============================] - 215s - loss: 1.4873 - categorical_accuracy: 0.6101 - val_loss: 1.4511 - val_categorical_accuracy: 0.6215
+Epoch 5/10
+523736/523736 [==============================] - 1812s - loss: 1.3966 - categorical_accuracy: 0.6332 - val_loss: 1.3800 - val_categorical_accuracy: 0.6378
+Epoch 6/10
+523736/523736 [==============================] - 214s - loss: 1.3284 - categorical_accuracy: 0.6506 - val_loss: 1.3282 - val_categorical_accuracy: 0.6517
+Epoch 7/10
+523736/523736 [==============================] - 215s - loss: 1.2747 - categorical_accuracy: 0.6640 - val_loss: 1.2855 - val_categorical_accuracy: 0.6624
+Epoch 8/10
+523736/523736 [==============================] - 215s - loss: 1.2315 - categorical_accuracy: 0.6750 - val_loss: 1.2521 - val_categorical_accuracy: 0.6717
+Epoch 9/10
+523736/523736 [==============================] - 215s - loss: 1.1954 - categorical_accuracy: 0.6835 - val_loss: 1.2257 - val_categorical_accuracy: 0.6774
+Epoch 10/10
+523736/523736 [==============================] - 215s - loss: 1.1651 - categorical_accuracy: 0.6907 - val_loss: 1.2073 - val_categorical_accuracy: 0.6816
+{'loss': [2.2594079939538658, 1.792780919866888, 1.6108052882879136, 1.4873304986082614, 1.3965589207530174, 1.3283853189390973, 1.2747292140977913, 1.2314659316446497, 1.1953981889873493, 1.1651087083628173], 'val_loss': [1.9225293538012027, 1.6966617591084177, 1.5480325486490933, 1.4510696336822184, 1.3800185296226577, 1.3282133537865259, 1.2854909046994465, 1.2520576990187435, 1.2257452691020609, 1.2072737623573], 'val_categorical_accuracy': [0.50276854933685244, 0.55166303893929558, 0.59289723916776116, 0.62150685456799959, 0.63778210570095062, 0.65168213243086082, 0.66242028494883076, 0.67165387407876731, 0.67744300608901342, 0.68157482727626328], 'categorical_accuracy': [0.43278101945765751, 0.53215933218626821, 0.57674095346475074, 0.61009745367622137, 0.63319114975686208, 0.65055867841631343, 0.66395855926503355, 0.6749507385436696, 0.68347029803823189, 0.69069722149726709]}
+model saved to data/python/python_128_0.001_256.h5
+Test categorical accuracy: 0.6788375354
+starting model
+hyperparams : 128 0.1 512
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 147s - loss: 2.6439 - categorical_accuracy: 0.3750 - val_loss: 2.8246 - val_categorical_accuracy: 0.3588
+Epoch 2/10
+523736/523736 [==============================] - 147s - loss: 2.9912 - categorical_accuracy: 0.3368 - val_loss: 3.0218 - val_categorical_accuracy: 0.3367
+Epoch 3/10
+523736/523736 [==============================] - 147s - loss: 3.0253 - categorical_accuracy: 0.3374 - val_loss: 3.0457 - val_categorical_accuracy: 0.3321
+Epoch 4/10
+523736/523736 [==============================] - 147s - loss: 3.0371 - categorical_accuracy: 0.3378 - val_loss: 3.0434 - val_categorical_accuracy: 0.3320
+Epoch 5/10
+523736/523736 [==============================] - 147s - loss: 3.0681 - categorical_accuracy: 0.3376 - val_loss: 3.0497 - val_categorical_accuracy: 0.3436
+Epoch 6/10
+523736/523736 [==============================] - 147s - loss: 3.0926 - categorical_accuracy: 0.3378 - val_loss: 3.1348 - val_categorical_accuracy: 0.3364
+Epoch 7/10
+523736/523736 [==============================] - 147s - loss: 3.1009 - categorical_accuracy: 0.3348 - val_loss: 3.1082 - val_categorical_accuracy: 0.3237
+{'loss': [2.6439116001384075, 2.9911807208157581, 3.0252757338810943, 3.0371070317773228, 3.068147548011591, 3.0925713321823829, 3.1009043918198649], 'val_loss': [2.8245740939594195, 3.021761584486772, 3.0457478174152857, 3.0433716521465426, 3.0497018981900381, 3.1347947425010503, 3.1082427760791491], 'val_categorical_accuracy': [0.35883453624120221, 0.33667850456851617, 0.33212662772196022, 0.33195860543083333, 0.34364379270109435, 0.33642647111179602, 0.32365677626394174], 'categorical_accuracy': [0.3750000000136568, 0.33677845324149375, 0.33742763531492648, 0.33778277606785806, 0.33756892788045462, 0.33777704795606467, 0.33481372295394396]}
+model saved to data/python/python_128_0.1_512.h5
+Test categorical accuracy: 0.320970003574
+starting model
+hyperparams : 256 0.01 256
+Train on 523736 samples, validate on 130935 samples
+Epoch 1/10
+523736/523736 [==============================] - 244s - loss: 1.5559 - categorical_accuracy: 0.5961 - val_loss: 1.2269 - val_categorical_accuracy: 0.6726
+Epoch 2/10
+523736/523736 [==============================] - 245s - loss: 1.2423 - categorical_accuracy: 0.6746 - val_loss: 1.1800 - val_categorical_accuracy: 0.6866
+Epoch 3/10
+523736/523736 [==============================] - 245s - loss: 1.1360 - categorical_accuracy: 0.6966 - val_loss: 1.1613 - val_categorical_accuracy: 0.6925
+Epoch 4/10
+523736/523736 [==============================] - 245s - loss: 1.0513 - categorical_accuracy: 0.7142 - val_loss: 1.0572 - val_categorical_accuracy: 0.7147
+Epoch 5/10
+523736/523736 [==============================] - 245s - loss: 0.9960 - categorical_accuracy: 0.7265 - val_loss: 1.0445 - val_categorical_accuracy: 0.7176
+Epoch 6/10
+523736/523736 [==============================] - 245s - loss: 0.9630 - categorical_accuracy: 0.7344 - val_loss: 1.0249 - val_categorical_accuracy: 0.7241
+Epoch 7/10
+523736/523736 [==============================] - 245s - loss: 0.9477 - categorical_accuracy: 0.7376 - val_loss: 1.0174 - val_categorical_accuracy: 0.7258
+Epoch 8/10
+523736/523736 [==============================] - 245s - loss: 0.9208 - categorical_accuracy: 0.7442 - val_loss: 1.0036 - val_categorical_accuracy: 0.7291
+Epoch 9/10
+523736/523736 [==============================] - 245s - loss: 0.9180 - categorical_accuracy: 0.7442 - val_loss: 1.2494 - val_categorical_accuracy: 0.6666
+Epoch 10/10
+523736/523736 [==============================] - 245s - loss: 2.2044 - categorical_accuracy: 0.4803 - val_loss: 2.7004 - val_categorical_accuracy: 0.3610
+{'loss': [1.5559253901412098, 1.2423396339331576, 1.1360440211292657, 1.0512643052117641, 0.9959717751212126, 0.963009505036869, 0.94766762429444551, 0.92081987439920554, 0.91801055809284193, 2.2044293981923562], 'val_loss': [1.2269241684603975, 1.179958894985049, 1.1613062988083429, 1.05718623679196, 1.0444504302669766, 1.0249078768072712, 1.0173824107364249, 1.0036415560346483, 1.2493663087590214, 2.7003916800434102], 'val_categorical_accuracy': [0.67262382105089036, 0.68663077106334525, 0.6925268264125839, 0.71469813272952765, 0.71762324830039681, 0.72405391995401625, 0.72583342892346014, 0.72907167680075879, 0.66655974340278601, 0.36098827666359024], 'categorical_accuracy': [0.59608466862259235, 0.67457650418293724, 0.6966276902630375, 0.71422243267509422, 0.72648624496381875, 0.73440817512751289, 0.73764262912814837, 0.74423755476309317, 0.74420700503959425, 0.48030496281206153]}
+model saved to data/python/python_256_0.01_256.h5
+Test categorical accuracy: 0.357895026257
+corpus length: 2182278
+total chars: 96
+nb sequences: 727413
+Vectorization...
+Best performing model chosen hyper-parameters:
+{'lr': 1, 'n_modules': 1, 'batch_size': 1}
+Evalutation of best performing model:
+72736/72742 [============================>.] - ETA: 0s[0.9749393694860502, 0.73856918974071661]
+[ec2-user@ip-172-31-30-90 keras-char-rnn-server]$ 
+Broadcast message from root@ip-172-31-30-90
+	(unknown) at 6:28 ...
+
+The system is going down for power off NOW!
+Connection to ec2-54-154-129-125.eu-west-1.compute.amazonaws.com closed by remote host.
+Connection to ec2-54-154-129-125.eu-west-1.compute.amazonaws.com closed.
+

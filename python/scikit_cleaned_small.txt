@@ -1,0 +1,500 @@
+                         input_data.dtype.names.index(args.TARGET_NAME), axis=1)
+    training_features, testing_features, training_classes, testing_classes = \
+        train_test_split(features, input_data[args.TARGET_NAME], random_state=args.RANDOM_STATE)
+    if args.TPOT_MODE == 'classification':
+        tpot_type = TPOTClassifier
+    else:
+        tpot_type = TPOTRegressor
+    operator_dict = None
+    if args.CONFIG_FILE:
+        try:
+            with open(args.CONFIG_FILE, 'r') as input_file:
+                file_string =  input_file.read()
+            operator_dict = eval(file_string[file_string.find('{'):(file_string.rfind('}') + 1)])
+        except:
+            raise TypeError('The operator configuration file is in a bad format or not available. '
+                            'Please check the configuration file before running TPOT.')
+    tpot = tpot_type(generations=args.GENERATIONS, population_size=args.POPULATION_SIZE,
+                     offspring_size=args.OFFSPRING_SIZE, mutation_rate=args.MUTATION_RATE, crossover_rate=args.CROSSOVER_RATE,
+                     cv=args.NUM_CV_FOLDS, n_jobs=args.NUM_JOBS,
+                     scoring=args.SCORING_FN,
+                     max_time_mins=args.MAX_TIME_MINS, max_eval_time_mins=args.MAX_EVAL_MINS,
+                     random_state=args.RANDOM_STATE, config_dict=operator_dict,
+                     verbosity=args.VERBOSITY, disable_update_check=args.DISABLE_UPDATE_CHECK)
+    print('')
+    tpot.fit(training_features, training_classes)
+    if args.VERBOSITY in [1, 2] and tpot._optimized_pipeline:
+        training_score = max([tpot._pareto_front.keys[x].wvalues[1] for x in range(len(tpot._pareto_front.keys))])
+        print('\nTraining score: {}'.format(abs(training_score)))
+        print('Holdout score: {}'.format(tpot.score(testing_features, testing_classes)))
+    elif args.VERBOSITY >= 3 and tpot._pareto_front:
+        print('Final Pareto front testing scores:')
+        for pipeline, pipeline_scores in zip(tpot._pareto_front.items, reversed(tpot._pareto_front.keys)):
+            tpot._fitted_pipeline = tpot._pareto_front_fitted_pipelines[str(pipeline)]
+            print('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
+                                      tpot.score(testing_features, testing_classes),
+                                      pipeline))
+    if args.OUTPUT_FILE != '':
+        tpot.export(args.OUTPUT_FILE)
+
+if __name__ == '__main__':
+    main()
+
+import deap
+def get_by_name(opname, operators):
+        ret_op_classes = [op for op in operators if op.__name__ == opname]
+    if len(ret_op_classes) == 0:
+        raise TypeError('Cannot found operator {} in operator dictionary'.format(opname))
+    elif len(ret_op_classes) > 1:
+        print('Found multiple operator {} in operator dictionary'.format(opname),
+        'Please check your dictionary file.')
+    ret_op_class = ret_op_classes[0]
+    return ret_op_class
+def export_pipeline(exported_pipeline, operators, pset):
+            pipeline_tree = expr_to_tree(exported_pipeline, pset)
+        pipeline_text = generate_import_code(exported_pipeline, operators)
+        pipeline_text += pipeline_code_wrapper(generate_export_pipeline_code(pipeline_tree, operators))
+    return pipeline_text
+
+def expr_to_tree(ind, pset):
+        def prim_to_list(prim, args):
+        if isinstance(prim, deap.gp.Terminal):
+            if prim.name in pset.context:
+                 return pset.context[prim.name]
+            else:
+                 return prim.value
+        return [prim.name] + args
+    tree = []
+    stack = []
+    for node in ind:
+        stack.append((node, []))
+        while len(stack[-1][1]) == stack[-1][0].arity:
+            prim, args = stack.pop()
+            tree = prim_to_list(prim, args)
+            if len(stack) == 0:
+                break               stack[-1][1].append(tree)
+    return tree
+
+def generate_import_code(pipeline, operators):
+            operators_used = [x.name for x in pipeline if isinstance(x, deap.gp.Primitive)]
+    pipeline_text = 'import numpy as np\n\n'
+        num_op = len(operators_used)
+        import_relations = {}
+    for op in operators:
+        import_relations[op.__name__] = op.import_hash
+        num_op_root = 0
+    for op in operators_used:
+        if op != 'CombineDFs':
+            tpot_op = get_by_name(op, operators)
+            if tpot_op.root:
+                num_op_root += 1
+        else:
+            num_op_root += 1
+        if num_op_root > 1:
+        pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline', 'make_union'],
+            'sklearn.preprocessing':    ['FunctionTransformer'],
+            'sklearn.ensemble':         ['VotingClassifier']
+        }
+    elif num_op > 1:
+        pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split'],
+            'sklearn.pipeline':         ['make_pipeline']
+        }
+    else:         pipeline_imports = {
+            'sklearn.model_selection':  ['train_test_split']
+        }
+        for op in operators_used:
+        def merge_imports(old_dict, new_dict):
+                        for key in new_dict.keys():
+                if key in old_dict.keys():
+                                        old_dict[key] = set(old_dict[key]) | set(new_dict[key])
+                else:
+                    old_dict[key] = set(new_dict[key])
+        try:
+            operator_import = import_relations[op]
+            merge_imports(pipeline_imports, operator_import)
+        except KeyError:
+            pass  
+        for key in sorted(pipeline_imports.keys()):
+        module_list = ', '.join(sorted(pipeline_imports[key]))
+        pipeline_text += 'from {} import {}\n'.format(key, module_list)
+    pipeline_text += 
+    return pipeline_text
+
+def pipeline_code_wrapper(pipeline_code):
+        return     steps = process_operator(pipeline_tree, operators)
+    pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
+    return pipeline_text
+def generate_export_pipeline_code(pipeline_tree, operators):
+        steps = process_operator(pipeline_tree, operators)
+        num_step = len(steps)
+    if num_step > 1:
+        pipeline_text = "make_pipeline(\n{STEPS}\n)".format(STEPS=_indent(",\n".join(steps), 4))
+    else:         pipeline_text =  "{STEPS}".format(STEPS=_indent(",\n".join(steps), 0))
+    return pipeline_text
+def process_operator(operator, operators, depth=0):
+    steps = []
+    op_name = operator[0]
+    if op_name == "CombineDFs":
+        steps.append(
+            _combine_dfs(operator[1], operator[2], operators)
+        )
+    else:
+        input_name, args = operator[1], operator[2:]
+        tpot_op = get_by_name(op_name, operators)
+        if input_name != 'input_matrix':
+            steps.extend(process_operator(input_name, operators, depth + 1))
+                        if tpot_op.root and depth > 0:
+            steps.append(
+                "make_union(VotingClassifier([(\"est\", {})]), FunctionTransformer(lambda X: X))".
+                format(tpot_op.export(*args))
+            )
+        else:
+            steps.append(tpot_op.export(*args))
+    return steps
+
+def _indent(text, amount):
+        indentation = amount * ' '
+    return indentation + ('\n' + indentation).join(text.split('\n'))
+
+def _combine_dfs(left, right, operators):
+    def _make_branch(branch):
+        if branch == "input_matrix":
+            return "FunctionTransformer(lambda X: X)"
+        elif branch[0] == "CombineDFs":
+            return _combine_dfs(branch[1], branch[2], operators)
+        elif branch[1] == "input_matrix":              tpot_op = get_by_name(branch[0], operators)
+            if tpot_op.root:
+                return Copyright 2015-Present Randal S. Olson
+This file is modified based on codes for alogrithms.eaSimple module in DEAP.
+This file is part of the TPOT library.
+The TPOT library is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your option)
+any later version.
+The TPOT library is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+details. You should have received a copy of the GNU General Public License along
+with the TPOT library. If not, see http://www.gnu.org/licenses/.
+    offspring = []
+    for _ in range(lambda_):
+        op_choice = np.random.random()
+        if op_choice < cxpb:                        idxs = np.random.randint(0, len(population),size=2)
+            ind1, ind2 = toolbox.clone(population[idxs[0]]), toolbox.clone(population[idxs[1]])
+            ind_str = str(ind1)
+            num_loop = 0
+            while ind_str == str(ind1) and num_loop < 50 :                 ind1, ind2 = toolbox.mate(ind1, ind2)
+                num_loop += 1
+            if ind_str != str(ind1):                 del ind1.fitness.values
+            offspring.append(ind1)
+        elif op_choice < cxpb + mutpb:              idx = np.random.randint(0, len(population))
+            ind = toolbox.clone(population[idx])
+            ind_str = str(ind)
+            num_loop = 0
+            while ind_str == str(ind) and num_loop < 50 :                 ind, = toolbox.mutate(ind)
+                num_loop += 1
+            if ind_str != str(ind):                 del ind.fitness.values
+            offspring.append(ind)
+        else:             idx = np.random.randint(0, len(population))
+            offspring.append(toolbox.clone(population[idx]))
+    return offspring
+def eaMuPlusLambda(population, toolbox, mu, lambda_, cxpb, mutpb, ngen, pbar,
+                   stats=None, halloffame=None, verbose=0, max_time_mins = None):
+        logbook = tools.Logbook()
+    logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
+        invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    fitnesses = toolbox.evaluate(invalid_ind)
+    for ind, fit in zip(invalid_ind, fitnesses):
+        ind.fitness.values = fit
+    if halloffame is not None:
+        halloffame.update(population)
+    record = stats.compile(population) if stats is not None else {}
+    logbook.record(gen=0, nevals=len(invalid_ind), **record)
+        for gen in range(1, ngen + 1):
+                offspring = varOr(population, toolbox, lambda_, cxpb, mutpb)
+                invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+                if not pbar.disable:
+            pbar.update(len(offspring)-len(invalid_ind))
+            if not (max_time_mins is None) and pbar.n >= pbar.total:
+                pbar.total += lambda_
+        fitnesses = toolbox.evaluate(invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+
+                if halloffame is not None:
+            halloffame.update(offspring)
+                population[:] = toolbox.select(population + offspring, mu)
+                if not pbar.disable:
+                        if verbose == 2:
+                high_score = abs(max([halloffame.keys[x].wvalues[1] for x in range(len(halloffame.keys))]))
+                pbar.write('Generation {0} - Current best internal CV score: {1}'.format(gen, high_score))
+                        elif verbose == 3:
+                pbar.write('Generation {} - Current Pareto front scores:'.format(gen))
+                for pipeline, pipeline_scores in zip(halloffame.items, reversed(halloffame.keys)):
+                    pbar.write('{}\t{}\t{}'.format(int(abs(pipeline_scores.wvalues[0])),
+                                                         abs(pipeline_scores.wvalues[1]),
+                                                         pipeline))
+                pbar.write('')
+                record = stats.compile(population) if stats is not None else {}
+        logbook.record(gen=gen, nevals=len(invalid_ind), **record)
+    return population, logbook
+
+def mutNodeReplacement(individual, pset):
+    
+    index = np.random.randint(0, len(individual))
+    node = individual[index]
+    slice_ = individual.searchSubtree(index)
+    if node.arity == 0:          term = np.random.choice(pset.terminals[node.ret])
+        if isclass(term):
+            term = term()
+        individual[index] = term
+    else:                   rindex = None
+        if index + 1 < len(individual):
+            for i, tmpnode in enumerate(individual[index+1:], index+ 1):
+                if isinstance(tmpnode, gp.Primitive) and tmpnode.ret in tmpnode.args:
+                    rindex = i
+                                primitives = pset.primitives[node.ret]
+        if len(primitives) != 0:
+            new_node = np.random.choice(primitives)
+            new_subtree = [None] * len(new_node.args)
+            if rindex:
+                rnode = individual[rindex]
+                rslice = individual.searchSubtree(rindex)
+                                position = np.random.choice([i for i, a in enumerate(new_node.args) if a == rnode.ret])
+            else:
+                position = None
+            for i, arg_type in enumerate(new_node.args):
+                if i != position:
+                    term = np.random.choice(pset.terminals[arg_type])
+                    if isclass(term):
+                        term = term()
+                    new_subtree[i] = term
+                        if rindex:
+                new_subtree[position:position + 1] = individual[rslice]
+                        new_subtree.insert(0, new_node)
+            individual[slice_] = new_subtree
+    return individual,
+
+class Output_Array(object):
+    
+    pass
+
+import numpy as np
+from sklearn.metrics import make_scorer, SCORERS
+
+def balanced_accuracy(y_true, y_pred):
+        all_classes = list(set(np.append(y_true, y_pred)))
+    all_class_accuracies = []
+    for this_class in all_classes:
+        this_class_sensitivity = \
+            float(sum((y_pred == this_class) & (y_true == this_class))) /\
+            float(sum((y_true == this_class)))
+        this_class_specificity = \
+            float(sum((y_pred != this_class) & (y_true != this_class))) /\
+            float(sum((y_true != this_class)))
+        this_class_accuracy = (this_class_sensitivity + this_class_specificity) / 2.
+        all_class_accuracies.append(this_class_accuracy)
+    return np.mean(all_class_accuracies)
+SCORERS['balanced_accuracy'] = make_scorer(balanced_accuracy)
+
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
+import inspect
+
+class Operator(object):
+        def __init__(self):
+        pass
+    root = False      import_hash = None
+    sklearn_class = None
+    arg_types = None
+    dep_op_list = {} 
+class ARGType(object):
+        def __init__(self):
+     pass
+
+def source_decode(sourcecode):
+        tmp_path = sourcecode.split('.')
+    op_str = tmp_path.pop()
+    import_str = '.'.join(tmp_path)
+    try:
+        if sourcecode.startswith('tpot.'):
+            exec('from {} import {}'.format(import_str[4:], op_str))
+        else:
+            exec('from {} import {}'.format(import_str, op_str))
+        op_obj = eval(op_str)
+    except ImportError:
+        print('Warning: {} is not available and will not be used by TPOT.'.format(sourcecode))
+        op_obj = None
+    return import_str, op_str, op_obj
+def set_sample_weight(pipeline_steps, sample_weight=None):
+        sample_weight_dict = {}
+    if not isinstance(sample_weight, type(None)):
+        for (pname, obj) in pipeline_steps:
+            if inspect.getargspec(obj.fit).args.count('sample_weight'):
+                step_sw = pname + '__sample_weight'
+                sample_weight_dict[step_sw] = sample_weight
+    if sample_weight_dict:
+        return sample_weight_dict
+    else:
+        return None
+def ARGTypeClassFactory(classname, prange, BaseClass=ARGType):
+        return type(classname, (BaseClass,), {'values':prange})
+def TPOTOperatorClassFactory(opsourse, opdict, BaseClass=Operator, ArgBaseClass=ARGType):
+    
+    class_profile = {}
+    dep_op_list = {}
+    import_str, op_str, op_obj = source_decode(opsourse)
+    if not op_obj:
+        return None, None     else:
+                if issubclass(op_obj, ClassifierMixin) or issubclass(op_obj, RegressorMixin):
+            class_profile['root'] = True
+            optype = "Classifier or Regressor"
+        else:
+            optype = "Preprocessor or Selector"
+        @classmethod
+        def op_type(cls):
+                        return optype
+        class_profile['type'] = op_type
+        class_profile['sklearn_class'] = op_obj
+        import_hash = {}
+        import_hash[import_str] = [op_str]
+        arg_types = []
+        for pname in sorted(opdict.keys()):
+            prange = opdict[pname]
+            if not isinstance(prange, dict):
+                classname = '{}__{}'.format(op_str, pname)
+                arg_types.append(ARGTypeClassFactory(classname, prange))
+            else:
+                for dkey, dval in prange.items():
+                    dep_import_str, dep_op_str, dep_op_obj = source_decode(dkey)
+                    if dep_import_str in import_hash:
+                        import_hash[import_str].append(dep_op_str)
+                    else:
+                        import_hash[dep_import_str] = [dep_op_str]
+                    dep_op_list[pname]=dep_op_str
+                    if dval:
+                        for dpname in sorted(dval.keys()):
+                            dprange = dval[dpname]
+                            classname = '{}__{}__{}'.format(op_str, dep_op_str, dpname)
+                            arg_types.append(ARGTypeClassFactory(classname, dprange))
+        class_profile['arg_types'] = tuple(arg_types)
+        class_profile['import_hash'] = import_hash
+        class_profile['dep_op_list'] = dep_op_list
+        @classmethod
+        def parameter_types(cls):
+                        return ([np.ndarray] + arg_types, np.ndarray)
+
+        class_profile['parameter_types'] = parameter_types
+        @classmethod
+        def export(cls, *args):
+            
+            op_arguments = []
+            if dep_op_list:
+                dep_op_arguments = {}
+            for arg_class, arg_value in zip(arg_types, args):
+                if arg_value == "DEFAULT":
+                    continue
+                aname_split = arg_class.__name__.split('__')
+                if isinstance(arg_value, str):
+                    arg_value = '\"{}\"'.format(arg_value)
+                if len(aname_split) == 2:                     op_arguments.append("{}={}".format(aname_split[-1], arg_value))
+                else:                     if not list(dep_op_list.values()).count(aname_split[1]):
+                        raise TypeError('Warning: the operator {} is not in right format in the operator dictionary'.format(aname_split[0]))
+                    else:
+                        if aname_split[1] not in dep_op_arguments:
+                            dep_op_arguments[aname_split[1]] = []
+                        dep_op_arguments[aname_split[1]].append("{}={}".format(aname_split[-1], arg_value))
+            tmp_op_args = []
+            if dep_op_list:
+                                for dep_op_pname, dep_op_str in dep_op_list.items():
+                    if dep_op_str == 'f_classif':
+                        arg_value = dep_op_str
+                    else:
+                        arg_value = "{}({})".format(dep_op_str, ", ".join(dep_op_arguments[dep_op_str]))
+                    tmp_op_args.append("{}={}".format(dep_op_pname, arg_value))
+            op_arguments = tmp_op_args + op_arguments
+            return "{}({})".format(op_obj.__name__, ", ".join(op_arguments))
+        class_profile['export'] = export
+        op_classname = 'TPOT_{}'.format(op_str)
+        op_class = type(op_classname, (BaseClass,), class_profile)
+        op_class.__name__ = op_str
+        return op_class, arg_types
+
+from .base import TPOTBase
+from .config_classifier import classifier_config_dict
+from .config_regressor import regressor_config_dict
+
+class TPOTClassifier(TPOTBase):
+    
+    scoring_function = 'accuracy'      default_config_dict = classifier_config_dict     classification = True
+    regression = False
+
+class TPOTRegressor(TPOTBase):
+    
+    scoring_function = 'neg_mean_squared_error'      default_config_dict = regressor_config_dict     classification = False
+    regression = True
+
+__version__ = '0.7.0'
+
+from ._version import __version__
+from .tpot import TPOTClassifier, TPOTRegressor
+from .driver import main
+import numpy as np
+from sklearn.kernel_approximation import RBFSampler
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.tree import DecisionTreeClassifier
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
+exported_pipeline = make_pipeline(
+    RBFSampler(gamma=0.8500000000000001),
+    DecisionTreeClassifier(criterion="entropy", max_depth=3, min_samples_leaf=4, min_samples_split=9)
+)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
+exported_pipeline = KNeighborsClassifier(n_neighbors=4, p=2, weights="distance")
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1), tpot_data.dtype.names.index('class'), axis=1)
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
+exported_pipeline = RandomForestClassifier(bootstrap=False, max_features=0.4, min_samples_leaf=1, min_samples_split=9)
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+import numpy as np
+import pandas as pd
+from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+result1 = tpot_data.copy()
+gbc1 = GradientBoostingClassifier(learning_rate=0.49, max_features=1.0, min_weight_fraction_leaf=0.09, n_estimators=500, random_state=42)
+gbc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+result1['gbc1-classification'] = gbc1.predict(result1.drop('class', axis=1).values)
+import numpy as np
+import pandas as pd
+from sklearn.cross_validation import train_test_split
+from sklearn.linear_model import PassiveAggressiveClassifier
+tpot_data = pd.read_csv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR')
+training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+result1 = tpot_data.copy()
+pagr1 = PassiveAggressiveClassifier(C=0.81, loss="squared_hinge", fit_intercept=True, random_state=42)
+pagr1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
+result1['pagr1-classification'] = pagr1.predict(result1.drop('class', axis=1).values)
